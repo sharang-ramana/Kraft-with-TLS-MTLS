@@ -68,6 +68,14 @@ for each Confluent component.
 ### Create server certificates
 
 ```
+# Create kraft server certificates
+# Use the SANs listed in kraft-server-domain.json
+
+cfssl gencert -ca=$TUTORIAL_HOME/generated/cacerts.pem \
+-ca-key=$TUTORIAL_HOME/generated/rootCAkey.pem \
+-config=$TUTORIAL_HOME/ca-config.json \
+-profile=server $TUTORIAL_HOME/kraft-server-domain.json | cfssljson -bare $TUTORIAL_HOME/generated/kraft-server
+
 # Create Kafka server certificates
 # Use the SANs listed in kafka-server-domain.json
 
@@ -120,6 +128,8 @@ cfssl gencert -ca=$TUTORIAL_HOME/generated/cacerts.pem \
 ### Check validity of server certificates
 
 ```
+openssl x509 -in $TUTORIAL_HOME/generated/kraft-server.pem -text -noout
+
 openssl x509 -in $TUTORIAL_HOME/generated/kafka-server.pem -text -noout
 
 openssl x509 -in $TUTORIAL_HOME/generated/controlcenter-server.pem -text -noout

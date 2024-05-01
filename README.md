@@ -41,7 +41,7 @@ helm repo add confluentinc https://packages.confluent.io/helm
 Install Confluent For Kubernetes using Helm:
 
 ```
-helm upgrade --install operator confluentinc/confluent-for-kubernetes --namespace confluent
+helm upgrade --install confluent-operator confluentinc/confluent-for-kubernetes --namespace confluent --set kRaftEnabled=true
 ```
   
 Check that the Confluent For Kubernetes pod comes up and is running:
@@ -58,6 +58,7 @@ Each Confluent component service should have it's own TLS certificate. In this s
 generate a server certificate for each Confluent component service. Follow [these instructions](./assets/certs/component-certs/README.md) to generate these certificates.
 
 These TLS certificates include the following principal names for each component in the certificate Common Name:
+- Kraft: `kraft`
 - Kafka: `kafka`
 - Schema Registry: `sr`
 - Kafka Connect: `connect`
@@ -85,12 +86,18 @@ credentials:
 Set the tutorial directory for this tutorial under the directory you downloaded the tutorial files:
 
 ```
-export TUTORIAL_HOME=<Tutorial directory>/security/userprovided-tls_mtls_kafka-acls
+export TUTORIAL_HOME=<Tutorial directory>
 ```
 
 In this step, you will create secrets for each Confluent component TLS certificates.
 
 ```
+kubectl create secret generic tls-kraft \
+  --from-file=fullchain.pem=$TUTORIAL_HOME/assets/certs/component-certs/generated/kraft-server.pem \
+  --from-file=cacerts.pem=$TUTORIAL_HOME/assets/certs/component-certs/generated/cacerts.pem \
+  --from-file=privkey.pem=$TUTORIAL_HOME/assets/certs/component-certs/generated/kraft-server-key.pem \
+  --namespace confluent
+
 kubectl create secret generic tls-kafka \
   --from-file=fullchain.pem=$TUTORIAL_HOME/assets/certs/component-certs/generated/kafka-server.pem \
   --from-file=cacerts.pem=$TUTORIAL_HOME/assets/certs/component-certs/generated/cacerts.pem \
@@ -147,7 +154,7 @@ kubectl create secret generic credential \
 Deploy Confluent Platform:
 
 ```
-kubectl apply -f $TUTORIAL_HOME/confluent-platform-mtls-acls.yaml --namespace confluent
+kubectl apply -f $TUTORIAL_HOME/confluent-platform.yaml --namespace confluent
 ```
 
 Check that all Confluent Platform resources are deployed:
@@ -179,11 +186,12 @@ Set up port forwarding to Control Center web UI from local machine:
 kubectl port-forward controlcenter-0 9021:9021 --namespace confluent
 ```
 
-Browse to Control Center.
+Browse to Control Center by portforwarding.
 
 ```
 https://localhost:9021
 ```
+or try to use the external url
 
 ## Tear down
 
