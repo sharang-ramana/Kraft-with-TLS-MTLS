@@ -3,7 +3,8 @@
     "hosts": [
       "kraft",
       "kraft.mydomain.example",
-      "kraft.confluent.svc.cluster.local"
+      "kraft.confluent.svc.cluster.local",
+      "*.kraft.confluent.svc.cluster.local"
     ],
     "key": {
       "algo": "rsa",

@@ -1,14 +1,14 @@
 apiVersion: platform.confluent.io/v1beta1
 kind: KRaftController
 metadata:
-  name: kraftcontroller
+  name: kraft
   namespace: confluent
 spec:
   replicas: 3
-  dataVolumeCapacity: 20G
+  dataVolumeCapacity: 10G
   image:
-    application: docker.io/confluentinc/cp-server:7.4.0
-    init: confluentinc/confluent-init-container:2.6.0
+    application: docker.io/confluentinc/cp-server:7.6.0
+    init: confluentinc/confluent-init-container:2.8.0
   listeners:
     controller:
       tls:
@@ -31,9 +31,6 @@ spec:
     application: confluentinc/cp-server:7.6.0
     init: confluentinc/confluent-init-container:2.8.0
   dataVolumeCapacity: 10Gi
-  configOverrides:
-    server: #This config override is required for CP 7.0 update to use AclAuthorizer instead of SimpleAclAuthorizer
-      - authorizer.class.name=org.apache.kafka.metadata.authorizer.StandardAuthorizer
   tls:
     secretRef: tls-kafka
   listeners:
@@ -59,14 +56,10 @@ spec:
           domain: mydomain.example
           brokerPrefix: b
           bootstrapPrefix: kafka
-  authorization:
-    type: simple
-    superUsers:
-    - User:kafka
   dependencies:
     kRaftController:
       clusterRef:
-        name: kraftcontroller
+        name: kraft
       controllerListener:
         authentication:
           type: mtls
@@ -79,7 +72,7 @@ metadata:
   name: connect
   namespace: confluent
 spec:
-  replicas: 2
+  replicas: 1
   image:
     application: confluentinc/cp-server-connect:7.6.0
     init: confluentinc/confluent-init-container:2.8.0
@@ -154,7 +147,7 @@ metadata:
   name: ksqldb
   namespace: confluent
 spec:
-  replicas: 2
+  replicas: 1
   image:
     application: confluentinc/cp-ksqldb-server:7.6.0
     init: confluentinc/confluent-init-container:2.8.0
