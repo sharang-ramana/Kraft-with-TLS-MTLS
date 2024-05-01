@@ -5,16 +5,20 @@ metadata:
   namespace: confluent
 spec:
   replicas: 3
-  dataVolumeCapacity: 10G
+  dataVolumeCapacity: 20G
   image:
-    application: confluentinc/cp-server:7.6.0
-    init: confluentinc/confluent-init-container:2.8.0
+    application: docker.io/confluentinc/cp-server:7.4.0
+    init: confluentinc/confluent-init-container:2.6.0
   listeners:
     controller:
+      tls:
+        enabled: true
       authentication:
         type: mtls
-      tls:
-        secretRef: tls-kraft
+        principalMappingRules:
+          - RULE:.*CN[\s]?=[\s]?([a-zA-Z0-9.]*)?.*/$1/
+  tls:
+    secretRef: tls-kraft
 ---
 apiVersion: platform.confluent.io/v1beta1
 kind: Kafka
