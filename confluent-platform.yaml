@@ -4,6 +4,21 @@ metadata:
   name: kraft
   namespace: confluent
 spec:
+  configOverrides:
+    server:
+      - confluent.balancer.enable=true
+      - confluent.balancer.heal.uneven.load.trigger=ANY_UNEVEN_LOAD
+      - confluent.balancer.heal.broker.failure.threshold.ms=600000
+      - confluent.balancer.throttle.bytes.per.second=104857600
+      - inter.broker.listener.name=REPLICATION
+      - listener.name.replication.ssl.client.auth=required
+      - listener.name.replication.ssl.key.password=${file:/mnt/sslcerts/jksPassword.txt:jksPassword}
+      - listener.name.replication.ssl.keystore.location=/mnt/sslcerts/keystore.p12
+      - listener.name.replication.ssl.keystore.password=${file:/mnt/sslcerts/jksPassword.txt:jksPassword}
+      - listener.name.replication.ssl.principal.mapping.rules=RULE:.*CN[\s]?=[\s]?([a-zA-Z0-9.]*)?.*/$1/
+      - listener.name.replication.ssl.truststore.location=/mnt/sslcerts/truststore.p12
+      - listener.name.replication.ssl.truststore.password=${file:/mnt/sslcerts/jksPassword.txt:jksPassword}
+      - listener.security.protocol.map=CONTROLLER:SSL,REPLICATION:SSL
   replicas: 3
   dataVolumeCapacity: 10G
   image:
@@ -25,7 +40,22 @@ kind: Kafka
 metadata:
   name: kafka
   namespace: confluent
+  annotations: 
+    platform.confluent.io/enable-shrink: "true"
 spec:
+  configOverrides:
+    server:
+      - confluent.balancer.enable=true
+      - confluent.balancer.heal.uneven.load.trigger=ANY_UNEVEN_LOAD
+      - confluent.balancer.heal.broker.failure.threshold.ms=600000
+      - kafka.rest.client.security.protocol=SASL_SSL
+      - kafka.rest.enable=true
+      - kafka.rest.client.ssl.truststore.location=/mnt/sslcerts/truststore.p12
+      - kafka.rest.client.ssl.truststore.password=${file:/mnt/sslcerts/jksPassword.txt:jksPassword}
+      - kafka.rest.client.ssl.keystore.location=/mnt/sslcerts/keystore.p12
+      - kafka.rest.client.ssl.keystore.password=${file:/mnt/sslcerts/jksPassword.txt:jksPassword}
+      - kafka.rest.client.ssl.key.password=${file:/mnt/sslcerts/jksPassword.txt:jksPassword}
+      - kafka.rest.client.principal.mapping.rules=RULE:.*CN[\s]?=[\s]?([a-zA-Z0-9.]*)?.*/$1/
   replicas: 3
   image:
     application: confluentinc/cp-server:7.6.0
@@ -33,6 +63,13 @@ spec:
   dataVolumeCapacity: 10Gi
   tls:
     secretRef: tls-kafka
+  metricReporter:
+    enabled: true
+    bootstrapEndpoint: kafka:9071
+    authentication:
+      type: mtls
+    tls:
+      enabled: true
   listeners:
     internal:
       authentication:
@@ -41,7 +78,6 @@ spec:
           - RULE:^CN=([a-zA-Z0-9]*).*$/$1/
       tls:
         enabled: true
-        # Will use the certificates in the parent secretRef tls-kafka
     external:
       authentication:
         type: mtls
@@ -49,7 +85,6 @@ spec:
           - RULE:^CN=([a-zA-Z0-9]*).*$/$1/
       tls:
         enabled: true
-        # Will use the certificates in the parent secretRef tls-kafka
       externalAccess:
         type: loadBalancer
         loadBalancer:
@@ -212,3 +247,18 @@ spec:
       url: https://schemaregistry.confluent.svc.cluster.local:8081
       tls:
         enabled: true
+---
+apiVersion: platform.confluent.io/v1beta1
+kind: KafkaRestClass
+metadata:
+  name: kafka-rest
+  namespace: confluent
+spec:
+  kafkaClusterRef:
+    name: kafka
+  kafkaRest:
+    endpoint: https://kafka.confluent.svc.cluster.local:8090
+    authentication:
+      type: mtls
+    tls: 
+      secretRef: tls-kafka
